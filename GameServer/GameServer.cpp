@@ -10,41 +10,38 @@
 
 #include "RefCounting.h"
 #include "Memory.h"
+#include "Allocator.h"
 
-class Player
+class Knight
 {
 public:
-	Player() {}
-	virtual ~Player() {}
+	int32 _hp = rand() % 1000;
 };
 
-class Knight : public Player
+class Monster
 {
 public:
-	Knight()
-	{
-		cout << "Knight()" << endl;
-	}
-
-	Knight(int32 hp) : _hp(hp)
-	{
-		cout << "Knight(hp)" << endl;
-	}
-
-	~Knight()
-	{
-		cout << "~Knight()" << endl;
-	}
-
-	int32 _hp = 100;
-	int32 _mp = 10;
+	int64 _id = 0;
 };
 
 int main()
 {
-	Knight* knight = (Knight*)xnew<Player>();
+	for (int32 i = 0; i < 5; i++)
+	{
+		GThreadManager->Launch([]()
+			{
+				while (true)
+				{
+					Knight* knight = xnew<Knight>();
 
-	knight->_hp = 100;
+					cout << knight->_hp << endl;
 
-	xdelete(knight);
+					this_thread::sleep_for(10ms);
+
+					xdelete(knight);
+				}
+			});
+	}
+
+	GThreadManager->Join();
 }
