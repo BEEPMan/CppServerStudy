@@ -48,5 +48,5 @@ bool IocpCore::Dispatch(uint32 timeoutMs)
 		}
 	}
 
-	return false;
+	return true;
 }

@@ -14,8 +14,6 @@ void HandleError(const char* cause)
 
 int main()
 {
-    this_thread::sleep_for(1s);
-
     WSAData wsaData;
     if (::WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
         return 0;
@@ -72,6 +70,11 @@ int main()
                 // Pending
                 ::WSAWaitForMultipleEvents(1, &wsaEvent, TRUE, WSA_INFINITE, FALSE);
                 ::WSAGetOverlappedResult(clientSocket, &overlapped, &sendLen, FALSE, &flags);
+            }
+            else
+            {
+                HandleError("Debug");
+                break;
             }
         }
 
