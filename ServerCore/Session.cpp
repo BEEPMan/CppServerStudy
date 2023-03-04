@@ -175,18 +175,27 @@ void Session::RegisterSend()
 	}
 
 	// Scatter-Gather (흩어져 있는 데이터들을 모아서 한 방에 보낸다)
-	WSABUF wsabuf;
-	wsabuf.buf = (char*)_sendEvent.buffer.data();
-	wsabuf.len = (ULONG)_sendEvent.buffer.size();
+	Vector<WSABUF> wsaBufs;
+	wsaBufs.reserve(_sendEvent.sendBuffers.size());
+	for (SendBufferRef sendBuffer : _sendEvent.sendBuffers)
+	{
+		WSABUF wsabuf;
+		wsabuf.buf = reinterpret_cast<char*>(sendBuffer->Buffer());
+		wsabuf.len = static_cast<LONG>(sendBuffer->WriteSize());
+		wsaBufs.push_back(wsabuf);
+	}
+	
 
 	DWORD numOfBytes = 0;
-	if (SOCKET_ERROR == WSASend(_socket, &wsabuf, 1, OUT &numOfBytes, 0, &_sendEvent, nullptr))
+	if (SOCKET_ERROR == WSASend(_socket, wsaBufs.data(), static_cast<DWORD>(wsaBufs.size()), OUT & numOfBytes, 0, &_sendEvent, nullptr))
 	{
 		int32 errorCode = ::WSAGetLastError();
 		if (errorCode != WSA_IO_PENDING)
 		{
 			HandleError(errorCode);
 			_sendEvent.owner = nullptr; // RELEASE_REF
+			_sendEvent.sendBuffers.clear(); // RELEASE_REF
+			_sendRegistered.store(false);
 		}
 	}
 }
@@ -247,6 +256,7 @@ void Session::ProcessRecv(int32 numOfBytes)
 void Session::ProcessSend(int32 numOfBytes)
 {
 	_sendEvent.owner = nullptr; // RELEASE_REF
+	_sendEvent.sendBuffers.clear(); // RELEASE_REF
 
 	if (numOfBytes == 0)
 	{
@@ -256,6 +266,12 @@ void Session::ProcessSend(int32 numOfBytes)
 
 	// 컨텐츠 코드에서 재정의
 	OnSend(numOfBytes);
+
+	WRITE_LOCK;
+	if (_sendQueue.empty())
+		_sendRegistered.store(false);
+	else
+		RegisterSend();
 }
 
 void Session::HandleError(int32 errorCode)
