@@ -49,7 +49,6 @@ SendBufferRef SendBufferChunk::Open(uint32 allocSize)
 
 	_open = true;
 	return ObjectPool<SendBuffer>::MakeShared(shared_from_this(), Buffer(), allocSize);
-	return SendBufferRef();
 }
 
 void SendBufferChunk::Close(uint32 writeSize)
@@ -67,7 +66,7 @@ SendBufferRef SendBufferManager::Open(uint32 size)
 {
 	if (LSendBufferChunk == nullptr)
 	{
-		LSendBufferChunk = Pop(); // WRITE_LOCK;
+		LSendBufferChunk = Pop(); // WRITE_LOCK
 		LSendBufferChunk->Reset();
 	}
 
@@ -76,7 +75,7 @@ SendBufferRef SendBufferManager::Open(uint32 size)
 	// 다 썼으면 버리고 새거로 교체
 	if (LSendBufferChunk->FreeSize() < size)
 	{
-		LSendBufferChunk = Pop(); // WRITE_LOCK;
+		LSendBufferChunk = Pop(); // WRITE_LOCK
 		LSendBufferChunk->Reset();
 	}
 
@@ -87,6 +86,8 @@ SendBufferRef SendBufferManager::Open(uint32 size)
 
 SendBufferChunkRef SendBufferManager::Pop()
 {
+	cout << "Pop SENDBUFFERCHUNK" << endl;
+
 	{
 		WRITE_LOCK;
 		if (_sendBufferChunks.empty() == false)
@@ -108,5 +109,7 @@ void SendBufferManager::Push(SendBufferChunkRef buffer)
 
 void SendBufferManager::PushGlobal(SendBufferChunk* buffer)
 {
+	cout << "PushGlobal SENDBUFFERCHUNK" << endl;
+
 	GSendBufferManager->Push(SendBufferChunkRef(buffer, PushGlobal));
 }
