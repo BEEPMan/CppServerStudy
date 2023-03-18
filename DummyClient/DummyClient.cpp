@@ -24,14 +24,14 @@ public:
 
     virtual void OnRecvPacket(BYTE* buffer, int32 len) override
     {
-        PacketSessionRef session = PacketSessionRef();
+        PacketSessionRef session = GetPacketSessionRef();
         PacketHeader* header = reinterpret_cast<PacketHeader*>(buffer);
 
         // TODO : packetId 대역 체크
         ServerPacketHandler::HandlePacket(session, buffer, len);
     }
 
-    virtual void OnSend(int32 len)
+    virtual void OnSend(int32 len) override
     {
         //cout << "OnSend Len = " << len << endl;
     }
@@ -44,6 +44,8 @@ public:
 
 int main()
 {
+    ServerPacketHandler::Init();
+
     this_thread::sleep_for(1s);
 
     ClientServiceRef service = MakeShared<ClientService>(
